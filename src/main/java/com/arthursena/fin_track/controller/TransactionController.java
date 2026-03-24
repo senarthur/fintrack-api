@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,12 +14,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.arthursena.fin_track.model.Transaction;
+import com.arthursena.fin_track.model.dto.TransactionResponse;
 import com.arthursena.fin_track.service.TransactionService;
 
 
 @RestController
 @RequestMapping("/api/transactions")
-@CrossOrigin(origins = "http://localhost:4200")
 public class TransactionController {
 
     private final TransactionService transactionService;
@@ -30,26 +29,26 @@ public class TransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Transaction>> getAllTransactions() {
+    public ResponseEntity<List<TransactionResponse>> getAllTransactions() {
         return ResponseEntity.ok(transactionService.findAllTransactions());
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<Transaction> getTransactionById(@PathVariable String id) {
+    public ResponseEntity<TransactionResponse> getTransactionById(@PathVariable String id) {
         return transactionService.findTransactionById(id)
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Transaction> createTransaction(@RequestBody Transaction transaction) {
-        Transaction newTransaction = transactionService.saveTransaction(transaction);
+    public ResponseEntity<TransactionResponse> createTransaction(@RequestBody Transaction transaction) {
+        TransactionResponse newTransaction = transactionService.saveTransaction(transaction);
         return ResponseEntity.ok(newTransaction);
     }
     
     @PutMapping("/{id}")
-    public ResponseEntity<Transaction> updateTransaction(@PathVariable String id, @RequestBody Transaction updatedTransaction) {
-        Transaction transaction = transactionService.updateTransaction(id, updatedTransaction);
+    public ResponseEntity<TransactionResponse> updateTransaction(@PathVariable String id, @RequestBody Transaction updatedTransaction) {
+        TransactionResponse transaction = transactionService.updateTransaction(id, updatedTransaction);
         return transaction != null ? ResponseEntity.ok(transaction) : ResponseEntity.notFound().build();
     }
 

@@ -4,9 +4,12 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.arthursena.fin_track.model.Transaction;
+import com.arthursena.fin_track.model.User;
+import com.arthursena.fin_track.model.dto.TransactionResponse;
 import com.arthursena.fin_track.model.enums.TransactionType;
 import com.arthursena.fin_track.repository.TransactionRepository;
 
@@ -19,34 +22,55 @@ public class TransactionService {
         this.transactionRepository = transactionRepository;
     }
 
-    public List<Transaction> findAllTransactions() {
-        return transactionRepository.findAll();
+    public List<TransactionResponse> findAllTransactions() {
+        User user = getCurrentUser();
+        return transactionRepository.findByUser(user).stream().map(TransactionResponse::new).toList().reversed();
     }
 
-    public Optional<Transaction> findTransactionById(String id) {
-        return transactionRepository.findById(id);
+    public Optional<TransactionResponse> findTransactionById(String id) {
+        User user = getCurrentUser();
+
+        return transactionRepository.findById(id)
+                .filter(t -> t.getUser().getId().equals(user.getId()))
+                .map(TransactionResponse::new);
     }
 
-    public Transaction saveTransaction(Transaction transaction) {
-        return transactionRepository.save(transaction);
+    public TransactionResponse saveTransaction(Transaction transaction) {
+        User user = getCurrentUser();
+        
+        transaction.setUser(user);
+        transaction.setId(null);
+        Transaction newTransaction = transactionRepository.save(transaction);
+        return new TransactionResponse(newTransaction);
     }
 
     public void deleteTransaction(String id) {
-        transactionRepository.deleteById(id);
+        User user = getCurrentUser();
+        transactionRepository.findById(id)
+            .filter(t -> t.getUser().getId().equals(user.getId()))
+            .ifPresent(transactionRepository::delete);
     }
 
-    public Transaction updateTransaction(String id, Transaction updatedTransaction) {
-        return transactionRepository.findById(id).map(transaction -> {
-            transaction.setDescription(updatedTransaction.getDescription());
-            transaction.setAmount(updatedTransaction.getAmount());
-            transaction.setTransactionType(updatedTransaction.getTransactionType());
-            transaction.setTitle(updatedTransaction.getTitle());
-            return transactionRepository.save(transaction);
-        }).orElse(null);
+    public TransactionResponse updateTransaction(String id, Transaction updatedTransaction) {
+        User user = getCurrentUser();
+        
+        return transactionRepository.findById(id)
+            .filter(t -> t.getUser().getId().equals(user.getId()))
+            .map(transaction -> {
+                transaction.setDescription(updatedTransaction.getDescription());
+                transaction.setTitle(updatedTransaction.getTitle());
+                transaction.setTransactionType(updatedTransaction.getTransactionType());
+                transaction.setAmount(updatedTransaction.getAmount());
+
+                Transaction saved = transactionRepository.save(transaction);
+                return new TransactionResponse(saved);
+            }).orElse(null);
     }
 
     public BigDecimal calculateBalance() {
-        List<Transaction> transactions = transactionRepository.findAll();
+        User user = getCurrentUser();
+
+        List<Transaction> transactions = transactionRepository.findByUser(user);
         
         BigDecimal revenues = transactions.stream()
             .filter(t -> t.getTransactionType() == TransactionType.REVENUE)
@@ -59,5 +83,9 @@ public class TransactionService {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return revenues.subtract(expenses);
+    }
+
+    private User getCurrentUser() {
+        return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 }
