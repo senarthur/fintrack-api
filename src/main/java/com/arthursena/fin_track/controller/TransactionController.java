@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.arthursena.fin_track.exception.TransactionNotFoundException;
 import com.arthursena.fin_track.model.Transaction;
 import com.arthursena.fin_track.model.dto.TransactionResponse;
 import com.arthursena.fin_track.service.TransactionService;
@@ -37,7 +38,7 @@ public class TransactionController {
     public ResponseEntity<TransactionResponse> getTransactionById(@PathVariable String id) {
         return transactionService.findTransactionById(id)
             .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+            .orElseThrow(() -> new TransactionNotFoundException("A transação não existe"));
     }
 
     @PostMapping
@@ -49,7 +50,10 @@ public class TransactionController {
     @PutMapping("/{id}")
     public ResponseEntity<TransactionResponse> updateTransaction(@PathVariable String id, @RequestBody Transaction updatedTransaction) {
         TransactionResponse transaction = transactionService.updateTransaction(id, updatedTransaction);
-        return transaction != null ? ResponseEntity.ok(transaction) : ResponseEntity.notFound().build();
+
+        if(transaction == null) throw new TransactionNotFoundException("A transação não existe");
+    
+        return ResponseEntity.ok(transaction);
     }
 
     @DeleteMapping("/{id}")

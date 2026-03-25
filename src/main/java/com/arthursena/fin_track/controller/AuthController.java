@@ -3,6 +3,7 @@ package com.arthursena.fin_track.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.arthursena.fin_track.exception.UserAlreadyExistsException;
 import com.arthursena.fin_track.model.User;
 import com.arthursena.fin_track.model.dto.LoginResponse;
 import com.arthursena.fin_track.model.dto.UserRequestLogin;
@@ -37,6 +38,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody @Validated UserRequestLogin data) {
         var usernamePassword = new UsernamePasswordAuthenticationToken(data.login(), data.password());
+        
         var auth = this.authManager.authenticate(usernamePassword);
 
         var user = (User) auth.getPrincipal();
@@ -48,7 +50,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<Void> register(@RequestBody @Validated UserRequestRegister data) {
         if (this.userRepository.findByLogin(data.login()) != null) {
-            return ResponseEntity.badRequest().build();
+            throw new UserAlreadyExistsException("Usuário já está cadastrado no sistema");
         }
 
         String encryptedPassword = new BCryptPasswordEncoder().encode(data.password());
