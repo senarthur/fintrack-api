@@ -1,7 +1,6 @@
 package com.arthursena.fin_track.controller;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,12 +10,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.arthursena.fin_track.exception.TransactionNotFoundException;
 import com.arthursena.fin_track.model.Transaction;
+import com.arthursena.fin_track.model.dto.PageTransactionResponse;
 import com.arthursena.fin_track.model.dto.TransactionResponse;
 import com.arthursena.fin_track.service.TransactionService;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 
 @RestController
@@ -30,8 +34,11 @@ public class TransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TransactionResponse>> getAllTransactions() {
-        return ResponseEntity.ok(transactionService.findAllTransactions());
+    public ResponseEntity<PageTransactionResponse> getAllTransactions(
+            @RequestParam(defaultValue = "0") @Min(0) int page, 
+            @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size
+    ) {
+        return ResponseEntity.ok(transactionService.findAllTransactions(page, size));
     }
     
     @GetMapping("/{id}")
